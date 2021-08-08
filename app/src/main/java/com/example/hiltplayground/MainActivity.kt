@@ -5,6 +5,9 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import dagger.Module
 import dagger.Provides
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.components.SingletonComponent
@@ -27,16 +30,45 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var repo: Repo
 
+    @Inject
+    lateinit var objectThatNeedSomeDataButNotPreparedYetFactory: ObjectThatNeedSomeDataButNotPreparedYetFactory
+
+     lateinit var objectThatNeedSomeDataButNotPreparedYet: ObjectThatNeedSomeDataButNotPreparedYet
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        objectThatNeedSomeDataButNotPreparedYet= objectThatNeedSomeDataButNotPreparedYetFactory.create("Abdo")
 
-        Log.d("Debug", player.name)
-        Log.d("Debug", club.players.toString())
-        Log.d("Debug", repo.getDataRemote())
-        Log.d("Debug", repo.getDataLocal())
+
     }
 }
+
+
+ class ObjectThatNeedSomeDataButNotPreparedYet @AssistedInject constructor(
+   private val age: Int,
+    @Assisted private val name: String
+) {
+    fun printData() = "$name   $age"
+
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AssistedInjectExampleModule {
+    @Singleton
+    @Provides
+    fun providesAge(): Int = 27
+}
+
+@AssistedFactory
+interface ObjectThatNeedSomeDataButNotPreparedYetFactory {
+    fun create(name: String): ObjectThatNeedSomeDataButNotPreparedYet
+}
+
+
+
+
 
 data class Player @Inject constructor(val name: String)
 
@@ -82,8 +114,10 @@ class LocalDataSource @Inject constructor() : DataSource {
     override fun getDataSourceName() = "LocalDataSource"
 }
 
-class Repo @Inject constructor(@RemoteSource private val remoteDataSource: DataSource,
-                               @LocalSource private val localDataSource: DataSource) {
+class Repo @Inject constructor(
+    @RemoteSource private val remoteDataSource: DataSource,
+    @LocalSource private val localDataSource: DataSource
+) {
     fun getDataRemote() = remoteDataSource.getDataSourceName()
     fun getDataLocal() = localDataSource.getDataSourceName()
 }
